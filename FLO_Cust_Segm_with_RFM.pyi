@@ -180,4 +180,3 @@ def cust_seg_with_rfm(dataframe):
 
 rfm_df = cust_seg_with_rfm(df)
 
-
