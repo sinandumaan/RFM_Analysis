@@ -128,8 +128,16 @@ rfm[["segment", "recency", "frequency", "monetary"]].groupby("segment").agg(["me
 
 target_segments_customer_ids = rfm[rfm["segment"].isin(["champions","loyal_customers"])]["customer_id"]
 customer_ids = df[(df["master_id"].isin(target_segments_customer_ids)) &(df["interested_in_categories_12"].str.contains("KADIN"))]["master_id"]
-customer_ids.to_csv("shoe_brand_customer_id.csv", index=False)
+cust_ids.to_csv("shoe_brand_customer_id.csv", index=False)
 
+
+# FLO is planned nearly 40% discount for Men's and Children's products. Previously interested in categories related to this discount
+# customers who are good customers but have not shopped for a long time should not be lost, those who are asleep and new
+# incoming customers want to be specifically targeted. Save the ids of the customers in the appropriate profile to the csv file.
+
+target_segments_customer_ids2 = rfm[rfm["segment"].isin(["cant_loose","hibernating","new_customers"])]["customer_id"]
+customer_ids_2 = df[(df["master_id"].isin(target_segments_customer_ids)) & ((df["interested_in_categories_12"].str.contains("ERKEK"))|(df["interested_in_categories_12"].str.contains("COCUK")))]["master_id"]
+customer_ids_2.to_csv("40_discount_Men_Children.csv", index=False)
 
 
 
