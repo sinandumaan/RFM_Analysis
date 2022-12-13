@@ -56,6 +56,79 @@ def data_prep(dataframe):
     return df
 
 
+# Calculating RFM(Recency, Frequency, Monetary) Metrics
+
+# Specify the analysis date with parameter "last_order_date"
+df["last_order_date"].max() # 2021-05-30
+analysis_date = dt.datetime(2021,6,1)
+
+# New Dataframe is created as named "rfm" and columns are ["customer_id","recency","frequency","monetary"]
+
+rfm = pd.DataFrame()
+rfm["customer_id"] = df["master_id"]
+rfm["recency"] = (analysis_date - df["last_order_date"]).astype('timedelta64[D]')
+rfm["frequency"] = df["order_num_total"]
+rfm["monetary"] = df["customer_value_total"]
+
+# Calculating RF and RFM Scores with qcut
+
+rfm["recency_score"] = pd.qcut(rfm['recency'], 5, labels=[5, 4, 3, 2, 1])
+rfm["frequency_score"] = pd.qcut(rfm['frequency'].rank(method="first"), 5, labels=[1, 2, 3, 4, 5])
+rfm["monetary_score"] = pd.qcut(rfm['monetary'], 5, labels=[1, 2, 3, 4, 5])
+
+rfm["RF_SCORE"] = (rfm['recency_score'].astype(str) + rfm['frequency_score'].astype(str))
+
+rfm["RFM_SCORE"] = (rfm['recency_score'].astype(str) + rfm['frequency_score'].astype(str) + rfm['monetary_score'].astype(str))
+
+# Identifying RF Scores as Segment with Regular Expression(Regex)
+
+seg_map = {
+    r'[1-2][1-2]': 'hibernating',
+    r'[1-2][3-4]': 'at_Risk',
+    r'[1-2]5': 'cant_loose',
+    r'3[1-2]': 'about_to_sleep',
+    r'33': 'need_attention',
+    r'[3-4][4-5]': 'loyal_customers',
+    r'41': 'promising',
+    r'51': 'new_customers',
+    r'[4-5][2-3]': 'potential_loyalists',
+    r'5[4-5]': 'champions'
+}
+
+rfm['segment'] = rfm['RF_SCORE'].replace(seg_map, regex=True)
+
+rfm.head()
+
+
+# ANALYZE
+
+rfm[["segment", "recency", "frequency", "monetary"]].groupby("segment").agg(["mean", "count"])
+
+#                    recency       frequency       monetary
+#                       mean count      mean count     mean count
+# segment
+# about_to_sleep       113.79  1629      2.40  1629   359.01  1629
+# at_Risk              241.61  3131      4.47  3131   646.61  3131
+# cant_loose           235.44  1200     10.70  1200  1474.47  1200
+# champions             17.11  1932      8.93  1932  1406.63  1932
+# hibernating          247.95  3604      2.39  3604   366.27  3604
+# loyal_customers       82.59  3361      8.37  3361  1216.82  3361
+# need_attention       113.83   823      3.73   823   562.14   823
+# new_customers         17.92   680      2.00   680   339.96   680
+# potential_loyalists   37.16  2938      3.30  2938   533.18  2938
+# promising             58.92   647      2.00   647   335.67   647
+
+
+# Two Cases
+
+# FLO includes a new women's shoe brand. Product prices of the included brand
+# on your preferences. For this reason, it is specially designed with customers in the profile that will be interested in the promotion of the brand and product sales.
+# you want to contact. Shopping from loyal customers (champions, loyal_customers) and female category
+# customers to be contacted specifically. Save the id numbers of these customers to the csv file.
+
+target_segments_customer_ids = rfm[rfm["segment"].isin(["champions","loyal_customers"])]["customer_id"]
+customer_ids = df[(df["master_id"].isin(target_segments_customer_ids)) &(df["interested_in_categories_12"].str.contains("KADIN"))]["master_id"]
+customer_ids.to_csv("shoe_brand_customer_id.csv", index=False)
 
 
 
